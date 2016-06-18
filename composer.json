@@ -1,0 +1,14 @@
+{
+  "name": "drupal/membership_provider_wts",
+  "type": "drupal-module",
+  "description": "Membership Provider for WTS/ACHbill.com",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/membership_provider_wts",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "http://drupal.org/project/issues/membership_provider_wts",
+    "source": "http://cgit.drupalcode.org/membership_provider_wts"
+  },
+  "require": { }
+}
