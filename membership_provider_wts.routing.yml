@@ -1,0 +1,8 @@
+membership_provider_wts.callback_controller_post:
+  path: '/membership_provider_wts/callback'
+  defaults:
+    _controller: '\Drupal\membership_provider_wts\Controller\CallbackController::post'
+    _title: 'WTS Callback Controller'
+  requirements:
+    _method: 'POST'
+    _custom_access: '\Drupal\membership_provider_wts\Controller\CallbackController::access'
