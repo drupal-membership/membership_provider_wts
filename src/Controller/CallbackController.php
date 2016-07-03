@@ -128,7 +128,7 @@ class CallbackController extends ControllerBase {
         $msg = $event->isFulfilled() ? '*success*' : '*error*';
         break;
       case 'delete':
-        $this->event_dispatcher->dispatch(WTSEVents::DELETE, $event);
+        $this->event_dispatcher->dispatch(WTSEvents::DELETE, $event);
         $msg = $event->isFulfilled() ? '*success*' : '*error*';
         break;
       default:

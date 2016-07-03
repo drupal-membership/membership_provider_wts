@@ -3,15 +3,13 @@
 namespace Drupal\membership_provider_wts\Plugin\MembershipProvider;
 
 use Drupal\Core\Datetime\DateFormatter;
-use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\membership_provider\Plugin\MembershipProviderBase;
-use Drupal\membership_provider\Plugin\MembershipProviderInterface;
-use Drupal\membership_provider_netbilling\NetbillingUtilities;
-use GuzzleHttp\Client;
+use Drupal\membership_provider\Plugin\ConfigurableMembershipProviderBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Psr\Http\Message\ResponseInterface;
 
 /**
  * @MembershipProvider (
@@ -19,9 +17,10 @@ use Psr\Http\Message\ResponseInterface;
  *   label = @Translation("WTS/ACHBill.com")
  * )
  */
-class WTS extends MembershipProviderBase implements MembershipProviderInterface, ContainerFactoryPluginInterface {
+class WTS extends ConfigurableMembershipProviderBase implements ContainerFactoryPluginInterface {
 
   use StringTranslationTrait;
+  use DependencySerializationTrait;
 
   /**
    * The signup base URL.
@@ -48,17 +47,17 @@ class WTS extends MembershipProviderBase implements MembershipProviderInterface,
   /**
    * Logger channel factory.
    *
-   * @var \Drupal\Core\Logger\LoggerChannelFactory
+   * @var \Drupal\Core\Logger\LoggerChannelInterface
    */
-  private $loggerChannelFactory;
+  private $loggerChannel;
 
   /**
    * @inheritDoc
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, DateFormatter $dateFormatter, LoggerChannelFactory $loggerChannelFactory) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, DateFormatter $dateFormatter, LoggerChannelInterface $loggerChannel) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->dateFormatter = $dateFormatter;
-    $this->loggerChannelFactory = $loggerChannelFactory;
+    $this->loggerChannel = $loggerChannel;
   }
 
   /**
@@ -70,8 +69,9 @@ class WTS extends MembershipProviderBase implements MembershipProviderInterface,
       $plugin_id,
       $plugin_definition,
       $container->get('date.formatter'),
-      $container->get('logger.factory')
+      $container->get('logger.channel.membership_provider_wts')
     );
   }
+
 
 }
