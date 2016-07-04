@@ -73,5 +73,38 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
     );
   }
 
+  /**
+   * @inheritDoc
+   */
+  public function defaultConfiguration() {
+    return [
+      'site_id' => '',
+      'account_id' => '',
+      'access_keyword' => '',
+      'sftp_password' => '',
+    ];
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $config = [
+      'site_id' => $this->t('Site ID'),
+      'account_id' => $this->t('Account ID'),
+      'access_keyword' => $this->t('Access Keyword'),
+      'sftp_password' => $this->t('SFTP Password'),
+    ];
+    $values = $this->getConfiguration() + $this->defaultConfiguration();
+    foreach ($config as $key => $label) {
+      $form[$key] = [
+        '#type' => 'textfield',
+        '#title' => $label,
+        '#default_value' => $values[$key],
+        '#size' => 60,
+      ];
+    }
+    return $form;
+  }
 
 }

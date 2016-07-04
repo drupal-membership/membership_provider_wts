@@ -1,8 +1,0 @@
-<?php
-
-function membership_provider_wts_field_instances() {
-  /* @var EntityFieldManager $manager */
-  $manager = \Drupal::service('entity_field.manager');
-  $map = $manager->getFieldMapByFieldType('wts_site_config');
-  return $map;
-}
