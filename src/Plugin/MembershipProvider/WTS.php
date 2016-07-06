@@ -2,6 +2,8 @@
 
 namespace Drupal\membership_provider_wts\Plugin\MembershipProvider;
 
+use Carbon\Carbon;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Datetime\DateFormatter;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
@@ -9,6 +11,8 @@ use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\membership_provider\Plugin\ConfigurableMembershipProviderBase;
+use Masterminds\HTML5\Exception;
+use phpseclib\Net\SFTP;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -32,10 +36,7 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    */
   const FTP = 'ftp.achbill.com';
 
-  /**
-   * Inactive membership state.
-   */
-  const STATUS_INACTIVE = 'expired';
+  const WTS_DATE_FORMAT = 'Ymd';
 
   /**
    * The date formatter service.
@@ -107,12 +108,53 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
     return $form;
   }
 
-  public function fetchTransactions() {
-    $client = new SFTP(WTS::FTP);
-    if ($client->login(strtolower($sites[0]['account_id'], $sites[0]['sftp_password']))) {
-      $last = $state->get('cheeky_wts.last_file_date', 0);
+  public function formatFile(string $type, Carbon $date) {
+    return "{$this->getConfiguration()['account_id']}-{$type}-WTS-"
+      . $date->format(self::WTS_DATE_FORMAT)
+      . ".txt";
+  }
 
+  public function fetchTransactions($since = NULL, string $type = 'trans') {
+    $client = new SFTP(WTS::FTP);
+    $config = $this->getConfiguration();
+    $date = new Carbon($since, new \DateTimeZone('UTC'));
+    $data = [];
+    $transferred = 0;
+    if ($client->login(strtolower($config['account_id']), $config['sftp_password'])) {
+      $list = $client->rawlist('*' . $type . '*');
+      while ($date->isPast()) {
+        $file = $this->formatFile($type, $date);
+        if (array_key_exists($file, $list)) {
+          $recv = explode('\n', $client->get($file));
+          if ($transferred) {
+            // The first line is CSV headers, so keep only on first transfer.
+            array_shift($recv);
+          }
+          array_merge($data, $recv);
+          $transferred++;
+        }
+        else if ($date->diffInDays() > 2) {
+          $exception = new Exception('Could not download ' . $file . 'despite valid date > 2 days ago.');
+        }
+        else {
+          $exception = new Exception('Could not download ' . $file);
+        }
+        $date->addDay();
+      }
+      $client->disconnect();
     }
+    else {
+      // Create a proxy exception since SFTP doesn't throw them.
+      $err = new Exception(
+        'Unable to log in to WTS SFTP for account ' . $config['account_id'],
+        0,
+        new Exception($client->getLastSFTPError())
+      );
+      $this->loggerChannel->error($err->getMessage());
+      throw $err;
+    }
+    // @todo - Parse CSV and return
+    // @todo - Handle exception stored above.
   }
 
 }
