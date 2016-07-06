@@ -1,5 +1,5 @@
 {
-  "name": "drupal-membership/provider-wts",
+  "name": "drupal-membership/membership_provider_wts",
   "type": "drupal-module",
   "description": "Membership Provider for WTS/ACHbill.com",
   "keywords": ["Drupal"],
