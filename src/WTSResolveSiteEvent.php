@@ -8,7 +8,7 @@ use Drupal\Core\Entity\EntityInterface;
 /**
  * Event class to complete the site config.
  *
- * @package Drupal\membership_provider_netbilling
+ * @package Drupal\membership_provider_wts
  */
 class WTSResolveSiteEvent extends Event {
 

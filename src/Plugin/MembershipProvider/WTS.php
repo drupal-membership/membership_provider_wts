@@ -107,4 +107,12 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
     return $form;
   }
 
+  public function fetchTransactions() {
+    $client = new SFTP(WTS::FTP);
+    if ($client->login(strtolower($sites[0]['account_id'], $sites[0]['sftp_password']))) {
+      $last = $state->get('cheeky_wts.last_file_date', 0);
+
+    }
+  }
+
 }

@@ -114,6 +114,9 @@ class CallbackController extends ControllerBase {
 
   /**
    * POST callback handler.
+   * 
+   * @returns Response A text/plain response; the values are from the pseudo-code
+   *   in the API documentation.
    */
   public function post() {
     $this->setSiteConfig();
