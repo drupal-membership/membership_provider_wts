@@ -3,7 +3,6 @@
 namespace Drupal\membership_provider_wts\Plugin\MembershipProvider;
 
 use Carbon\Carbon;
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Datetime\DateFormatter;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
@@ -11,7 +10,6 @@ use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\membership_provider\Plugin\ConfigurableMembershipProviderBase;
-use Masterminds\HTML5\Exception;
 use phpseclib\Net\SFTP;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -36,7 +34,20 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    */
   const FTP = 'ftp.achbill.com';
 
+  /**
+   * The PHP date() format string for the transaction record files.
+   */
   const WTS_DATE_FORMAT = 'Ymd';
+
+  /**
+   * Transaction history file type - Transaction
+   */
+  const TYPE_TRANSACTIONS = 'trans';
+
+  /**
+   * Transaction history file type - Cancellations
+   */
+  const TYPE_CANCELLATIONS = 'cancel';
 
   /**
    * The date formatter service.
@@ -108,53 +119,95 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
     return $form;
   }
 
+  /**
+   * @param string $type
+   * @param \Carbon\Carbon $date
+   * @return string
+   */
   public function formatFile(string $type, Carbon $date) {
     return "{$this->getConfiguration()['account_id']}-{$type}-WTS-"
       . $date->format(self::WTS_DATE_FORMAT)
       . ".txt";
   }
 
-  public function fetchTransactions($since = NULL, string $type = 'trans') {
-    $client = new SFTP(WTS::FTP);
+  /**
+   * Fetch transactions from WTS SFTP.
+   *
+   * @param string $since Date parseable by \DateTime to fetch from, inclusive.
+   *   Will be interpreted in UTC.
+   * @param string $type Type of transaction files to query.
+   * @throws \Exception
+   * @return array Array:
+   *   - First value is an array of transactions
+   *   - Second value is a Carbon object for the last date successfully transferred.
+   */
+  public function fetchTransactions(string $since, string $type = self::TYPE_TRANSACTIONS) {
+    $client = new SFTP(self::FTP);
     $config = $this->getConfiguration();
     $date = new Carbon($since, new \DateTimeZone('UTC'));
     $data = [];
-    $transferred = 0;
+    $transferred = false;
+    // Assumption: Login is the lowercase equivalent to Account ID.
     if ($client->login(strtolower($config['account_id']), $config['sftp_password'])) {
-      $list = $client->rawlist('*' . $type . '*');
+      $list = $client->rawlist();
       while ($date->isPast()) {
         $file = $this->formatFile($type, $date);
-        if (array_key_exists($file, $list)) {
-          $recv = explode('\n', $client->get($file));
-          if ($transferred) {
+        if (array_key_exists($file, $list) && ($content = $client->get($file))) {
+          // @see http://stackoverflow.com/a/29471912/4447064
+          $recv = array_filter(preg_split("/\\r\\n|\\r|\\n/", $content));
+          if (!empty($transferred)) {
             // The first line is CSV headers, so keep only on first transfer.
             array_shift($recv);
           }
-          array_merge($data, $recv);
-          $transferred++;
+          $data = array_merge($data, $recv);
+          $transferred = clone $date;
         }
         else if ($date->diffInDays() > 2) {
-          $exception = new Exception('Could not download ' . $file . 'despite valid date > 2 days ago.');
-        }
-        else {
-          $exception = new Exception('Could not download ' . $file);
+          throw new \Exception('Could not download ' . $file . 'despite valid date > 2 days ago.');
         }
         $date->addDay();
       }
       $client->disconnect();
+      if (!$transferred) {
+        throw new \Exception('No transactions received querying from ' . $since);
+      }
     }
     else {
       // Create a proxy exception since SFTP doesn't throw them.
-      $err = new Exception(
+      $err = new \Exception(
         'Unable to log in to WTS SFTP for account ' . $config['account_id'],
         0,
-        new Exception($client->getLastSFTPError())
+        new \Exception($client->getLastSFTPError())
       );
       $this->loggerChannel->error($err->getMessage());
       throw $err;
     }
-    // @todo - Parse CSV and return
-    // @todo - Handle exception stored above.
+    return [
+      $this->parseTransactions($data),
+      $transferred,
+    ];
+  }
+
+  /**
+   * Parse the data file response into an associative array.
+   *
+   * @param array $data CSV data with first array item containing keys.
+   * @return array Array of transactions
+   */
+  private function parseTransactions(array $data) {
+    $trans = [];
+    $keys = [];
+    $csv = array_map('str_getcsv', $data);
+    foreach ($csv as $row => $line) {
+      if ($row === 0) {
+        $keys = $line;
+      }
+      else {
+        $member = array_combine($keys, $line);
+        $trans[] = $member;
+      }
+    }
+    return $trans;
   }
 
 }
