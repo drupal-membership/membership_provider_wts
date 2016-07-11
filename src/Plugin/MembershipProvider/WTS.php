@@ -12,6 +12,8 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\membership_provider\Plugin\ConfigurableMembershipProviderBase;
 use phpseclib\Net\SFTP;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\membership_provider\Annotation\MembershipProvider;
+use Drupal\Core\Annotation\Translation;
 
 /**
  * @MembershipProvider (
@@ -194,7 +196,7 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    * @param array $data CSV data with first array item containing keys.
    * @return array Array of transactions
    */
-  private function parseTransactions(array $data) {
+  protected function parseTransactions(array $data) {
     $trans = [];
     $keys = [];
     $csv = array_map('str_getcsv', $data);
