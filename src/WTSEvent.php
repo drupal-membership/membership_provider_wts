@@ -2,7 +2,6 @@
 
 namespace Drupal\membership_provider_wts;
 
-use Drupal\Core\Entity\EntityInterface;
 use Symfony\Component\EventDispatcher\Event;
 
 /**

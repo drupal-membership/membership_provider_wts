@@ -52,6 +52,35 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
   const TYPE_CANCELLATIONS = 'cancel';
 
   /**
+   * An auth code prefix indicating a test transaction.
+   *
+   * @var string
+   */
+  const TEST_PREFIX = 'Test Only:';
+
+  /**
+   * A transaction result code indicating an approved status.
+   */
+  const RESULT_APPROVED = 'Approved';
+
+  /**
+   * The timezone of the WTS server.
+   * 
+   * @todo - Verify this.
+   */
+  const TIMEZONE = 'CST6CDT';
+
+  /**
+   * The name of the transaction key that can be referenced.
+   */
+  const TRANSACTION_KEY = 'History KeyID';
+
+  /**
+   * The name of the key that can reference TRANSACTION_KEY
+   */
+  const REFERENCE_KEY = 'Reference KeyID';
+
+  /**
    * The date formatter service.
    *
    * @var \Drupal\Core\Datetime\DateFormatter
@@ -140,13 +169,13 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    * @param string $type Type of transaction files to query.
    * @throws \Exception
    * @return array Array:
-   *   - First value is an array of transactions
-   *   - Second value is a Carbon object for the last date successfully transferred.
+   *   - Array of transactions
+   *   - Carbon object for the last date successfully transferred.
    */
   public function fetchTransactions(string $since, string $type = self::TYPE_TRANSACTIONS) {
     $client = new SFTP(self::FTP);
     $config = $this->getConfiguration();
-    $date = new Carbon($since, new \DateTimeZone('UTC'));
+    $date = new Carbon($since, new \DateTimeZone(self::TIMEZONE));
     $data = [];
     $transferred = false;
     // Assumption: Login is the lowercase equivalent to Account ID.
@@ -171,7 +200,7 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
       }
       $client->disconnect();
       if (!$transferred) {
-        throw new \Exception('No transactions received querying from ' . $since);
+        throw new \Exception('No transaction files received querying from ' . $since);
       }
     }
     else {
@@ -194,9 +223,10 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    * Parse the data file response into an associative array.
    *
    * @param array $data CSV data with first array item containing keys.
+   * @param boolean $includeTest Flag indicating whether to include test transactions.
    * @return array Array of transactions
    */
-  protected function parseTransactions(array $data) {
+  protected function parseTransactions(array $data, $includeTest = false) {
     $trans = [];
     $keys = [];
     $csv = array_map('str_getcsv', $data);
@@ -206,6 +236,9 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
       }
       else {
         $member = array_combine($keys, $line);
+        if (!$includeTest && strpos($member['Authorization Code'], self::TEST_PREFIX) === 0) {
+          continue;
+        }
         $trans[] = $member;
       }
     }
