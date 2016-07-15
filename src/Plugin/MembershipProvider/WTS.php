@@ -166,13 +166,14 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    *
    * @param string $since Date parseable by \DateTime to fetch from, inclusive.
    *   Will be interpreted in UTC.
+   * @param bool $includeTest Whether to include test transactions.
    * @param string $type Type of transaction files to query.
    * @throws \Exception
    * @return array Array:
    *   - Array of transactions
    *   - Carbon object for the last date successfully transferred.
    */
-  public function fetchTransactions(string $since, string $type = self::TYPE_TRANSACTIONS) {
+  public function fetchTransactions(string $since, $includeTest = false, string $type = self::TYPE_TRANSACTIONS) {
     $client = new SFTP(self::FTP);
     $config = $this->getConfiguration();
     $date = new Carbon($since, new \DateTimeZone(self::TIMEZONE));
@@ -194,7 +195,7 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
           $transferred = clone $date;
         }
         else if ($date->diffInDays() > 2) {
-          throw new \Exception('Could not download ' . $file . 'despite valid date > 2 days ago.');
+          throw new \Exception('Could not download ' . $file . ' despite valid date > 2 days ago.');
         }
         $date->addDay();
       }
@@ -214,7 +215,7 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
       throw $err;
     }
     return [
-      $this->parseTransactions($data),
+      $this->parseTransactions($data, $includeTest),
       $transferred,
     ];
   }

@@ -12,21 +12,9 @@ use Symfony\Component\EventDispatcher\Event;
 class WTSEvent extends Event {
 
   /**
-   * Status indicating the original request has not yet been fulfilled.
-   */
-  const STATUS_NOT_FULFILLED = 0;
-
-  /**
    * Status indicating the original request has been fulfilled.
    */
   const STATUS_FULFILLED = 1;
-
-  /**
-   * The users for whom to act upon.
-   *
-   * @var array
-   */
-  private $users = [];
 
   /**
    * The site config.
@@ -36,7 +24,7 @@ class WTSEvent extends Event {
   private $siteConfig;
 
   /**
-   * Arbitrary data, e.g., hash info.
+   * The query data.
    *
    * @var array
    */
@@ -47,7 +35,7 @@ class WTSEvent extends Event {
    * 
    * @var int
    */
-  private $status = self::STATUS_NOT_FULFILLED;
+  private $status;
 
   /**
    * Status message.
@@ -106,12 +94,8 @@ class WTSEvent extends Event {
     return $this->data;
   }
 
-  public function getMessage() {
-    return $this->message;
-  }
-
-  public function getUsers() {
-    return $this->users;
+  public function getUser() {
+    return $this->getData()['username'];
   }
 
 }
