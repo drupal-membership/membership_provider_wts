@@ -17,14 +17,21 @@ class WTSResolveSiteEvent extends Event {
    *
    * @var array
    */
-  private $siteConfig;
+  protected $siteConfig;
 
   /**
    * The site entity.
    *
    * @var EntityInterface
    */
-  private $siteEntity;
+  protected $siteEntity;
+
+  /**
+   * The remote ID
+   *
+   * @var string
+   */
+  protected $remoteId;
 
   /**
    * @inheritDoc
@@ -40,6 +47,20 @@ class WTSResolveSiteEvent extends Event {
    */
   public function getSiteConfig() {
     return $this->siteConfig;
+  }
+
+  /**
+   * @return mixed
+   */
+  public function getRemoteId() {
+    return $this->remoteId;
+  }
+
+  /**
+   * @param mixed $remoteId
+   */
+  public function setRemoteId($remoteId) {
+    $this->remoteId = $remoteId;
   }
 
   /**

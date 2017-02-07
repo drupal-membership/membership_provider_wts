@@ -13,7 +13,7 @@ use Drupal\membership_provider_wts\WTSEvents;
 use Drupal\membership_provider_wts\WTSResolveSiteEvent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Drupal\membership_provider\Plugin\MembershipProviderManager;
+use Drupal\membership\Plugin\MembershipProviderManager;
 use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -39,7 +39,7 @@ class CallbackController extends ControllerBase {
   /**
    * Drupal\membership_provider\Plugin\MembershipProviderManager definition.
    *
-   * @var \Drupal\membership_provider\Plugin\MembershipProviderManager
+   * @var \Drupal\membership\Plugin\MembershipProviderManager
    */
   protected $plugin_manager_membership_provider_processor;
 
@@ -114,7 +114,7 @@ class CallbackController extends ControllerBase {
 
   /**
    * POST callback handler.
-   * 
+   *
    * @returns Response A text/plain response; the values are from the pseudo-code
    *   in the API documentation.
    */

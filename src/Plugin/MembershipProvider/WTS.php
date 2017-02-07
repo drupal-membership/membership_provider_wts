@@ -9,10 +9,10 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\membership_provider\Plugin\ConfigurableMembershipProviderBase;
+use Drupal\membership\Plugin\ConfigurableMembershipProviderBase;
 use phpseclib\Net\SFTP;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\membership_provider\Annotation\MembershipProvider;
+use Drupal\membership\Annotation\MembershipProvider;
 use Drupal\Core\Annotation\Translation;
 
 /**
@@ -65,7 +65,7 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
 
   /**
    * The timezone of the WTS server.
-   * 
+   *
    * @todo - Verify this.
    */
   const TIMEZONE = 'CST6CDT';
@@ -148,6 +148,13 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
       ];
     }
     return $form;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+    // TODO: Implement validateConfigurationForm() method.
   }
 
   /**
@@ -244,6 +251,17 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
       }
     }
     return $trans;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function configureFromId($id) {
+    if ($config = $this->resolver->getSiteConfigById($id)) {
+      $this->setConfiguration($config);
+      return $this;
+    }
+    return FALSE;
   }
 
 }
