@@ -17,7 +17,7 @@ final class WTSEvents {
   const APPEND = 'membership_provider_wts.append';
 
   /**
-   * Name of the append event.
+   * Name of the delete event.
    */
   const DELETE = 'membership_provider_wts.delete';
 
@@ -28,8 +28,6 @@ final class WTSEvents {
 
   /**
    * Config resolution
-   * 
-   * @Event
    */
   const RESOLVE_SITE_CONFIG = 'membership_provider_wts.resolver';
 

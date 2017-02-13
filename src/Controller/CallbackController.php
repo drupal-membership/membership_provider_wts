@@ -8,6 +8,7 @@ use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\membership_provider_wts\SiteResolver;
 use Drupal\membership_provider_wts\WTSEvent;
 use Drupal\membership_provider_wts\WTSEvents;
 use Drupal\membership_provider_wts\WTSResolveSiteEvent;
@@ -65,14 +66,22 @@ class CallbackController extends ControllerBase {
   protected $data;
 
   /**
+   * The WTS site resolver.
+   *
+   * @var \Drupal\membership_provider_wts\SiteResolver
+   */
+  protected $resolver;
+
+  /**
    * {@inheritdoc}
    */
-  public function __construct(RequestStack $request_stack, MembershipProviderManager $plugin_manager_membership_provider_processor, ContainerAwareEventDispatcher $event_dispatcher, CacheBackendInterface $cache_default) {
+  public function __construct(RequestStack $request_stack, MembershipProviderManager $plugin_manager_membership_provider_processor, ContainerAwareEventDispatcher $event_dispatcher, CacheBackendInterface $cache_default, SiteResolver $resolver) {
     $this->currentRequest = $request_stack->getCurrentRequest();
     $this->plugin_manager_membership_provider_processor = $plugin_manager_membership_provider_processor;
     $this->event_dispatcher = $event_dispatcher;
     $this->cache = $cache_default;
     $this->data = \GuzzleHttp\Psr7\parse_query($this->currentRequest->getContent());
+    $this->resolver = $resolver;
   }
 
   /**
@@ -83,7 +92,8 @@ class CallbackController extends ControllerBase {
       $container->get('request_stack'),
       $container->get('plugin.manager.membership_provider.processor'),
       $container->get('event_dispatcher'),
-      $container->get('cache.default')
+      $container->get('cache.default'),
+      $container->get('membership_provider_wts.site_resolver')
     );
   }
 
@@ -94,18 +104,7 @@ class CallbackController extends ControllerBase {
    * @throws AccessException
    */
   private function setSiteConfig() {
-    if ($cached = $this->cache->get('membership_provider_wts.site.' . $this->data['siteid'])) {
-      $this->siteConfig = $cached->data;
-    }
-    else {
-      $event = new WTSResolveSiteEvent($this->data['siteid']);
-      $this->event_dispatcher->dispatch(WTSEvents::RESOLVE_SITE_CONFIG, $event);
-      $this->siteConfig = $event->getSiteConfig();
-      $this->cache->set('membership_provider_wts.site.' . $this->data['siteid'],
-        $event->getSiteConfig(),
-        Cache::PERMANENT,
-        [$event->getSiteEntity()->getEntityType()->id() . ':' . $event->getSiteEntity()->id()]);
-    }
+    $this->siteConfig = $this->resolver->getSiteConfig($this->data['siteid']);
     if ($this->getSiteConfig()['access_keyword'] != $this->data['sys_pass']) {
       throw new AccessException('Invalid sys_pass parameter.', 403);
     }

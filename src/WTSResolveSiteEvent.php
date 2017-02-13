@@ -44,9 +44,14 @@ class WTSResolveSiteEvent extends Event {
    * Get the site config.
    *
    * @return array
+   *
+   * @throws \Exception Exception for no site config found.
    */
   public function getSiteConfig() {
-    return $this->siteConfig;
+    if ($config = $this->siteConfig) {
+      return $config;
+    }
+    throw new \Exception('No site config resolved.');
   }
 
   /**

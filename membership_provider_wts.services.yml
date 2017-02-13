@@ -2,3 +2,6 @@ services:
   logger.channel.membership_provider_wts:
     parent: logger.channel_base
     arguments: ['membership_provider_wts']
+  membership_provider_wts.site_resolver:
+    class: Drupal\membership_provider_wts\SiteResolver
+    arguments: ["@event_dispatcher", "@cache.default"]

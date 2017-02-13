@@ -10,6 +10,7 @@ use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\membership\Plugin\ConfigurableMembershipProviderBase;
+use Drupal\membership_provider_wts\SiteResolver;
 use phpseclib\Net\SFTP;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\membership\Annotation\MembershipProvider;
@@ -85,22 +86,30 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    *
    * @var \Drupal\Core\Datetime\DateFormatter
    */
-  private $dateFormatter;
+  protected $dateFormatter;
 
   /**
    * Logger channel factory.
    *
    * @var \Drupal\Core\Logger\LoggerChannelInterface
    */
-  private $loggerChannel;
+  protected $loggerChannel;
+
+  /**
+   * The WTS site resolver.
+   *
+   * @var \Drupal\membership_provider_wts\SiteResolver
+   */
+  protected $resolver;
 
   /**
    * @inheritDoc
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, DateFormatter $dateFormatter, LoggerChannelInterface $loggerChannel) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, DateFormatter $dateFormatter, LoggerChannelInterface $loggerChannel, SiteResolver $resolver) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->dateFormatter = $dateFormatter;
     $this->loggerChannel = $loggerChannel;
+    $this->resolver = $resolver;
   }
 
   /**
@@ -112,7 +121,8 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
       $plugin_id,
       $plugin_definition,
       $container->get('date.formatter'),
-      $container->get('logger.channel.membership_provider_wts')
+      $container->get('logger.channel.membership_provider_wts'),
+      $container->get('membership_provider_wts.site_resolver')
     );
   }
 
@@ -257,7 +267,7 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    * @inheritDoc
    */
   public function configureFromId($id) {
-    if ($config = $this->resolver->getSiteConfigById($id)) {
+    if ($config = $this->resolver->getSiteConfig($id)) {
       $this->setConfiguration($config);
       return $this;
     }
