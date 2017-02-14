@@ -3,10 +3,8 @@
 namespace Drupal\membership_provider_wts;
 
 use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
-use Drupal\Core\Access\AccessException;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Class SiteResolver.

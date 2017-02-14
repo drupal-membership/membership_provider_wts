@@ -17,7 +17,7 @@ use Drupal\Core\TypedData\DataDefinition;
  *   id = "wts_memtype",
  *   label = @Translation("WTS Memtype ID"),
  *   description = @Translation("WTS Memtype ID"),
- *   default_widget = "string_textfield",
+ *   default_widget = "wts_memtype",
  *   default_formatter = "wts_link"
  * )
  */
@@ -39,7 +39,11 @@ class WtsMemtypeFieldType extends FieldItemBase {
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
     // Prevent early t() calls by using the TranslatableMarkup.
     $properties['value'] = DataDefinition::create('string')
-      ->setLabel(new TranslatableMarkup('Text value'))
+      ->setLabel(new TranslatableMarkup('Memtype ID'))
+      ->setSetting('case_sensitive', $field_definition->getSetting('case_sensitive'))
+      ->setRequired(TRUE);
+    $properties['subid'] = DataDefinition::create('string')
+      ->setLabel(new TranslatableMarkup('SubID'))
       ->setSetting('case_sensitive', $field_definition->getSetting('case_sensitive'))
       ->setRequired(TRUE);
 
@@ -53,6 +57,11 @@ class WtsMemtypeFieldType extends FieldItemBase {
     $schema = array(
       'columns' => array(
         'value' => array(
+          'type' => $field_definition->getSetting('is_ascii') === TRUE ? 'varchar_ascii' : 'varchar',
+          'length' => (int) $field_definition->getSetting('max_length'),
+          'binary' => $field_definition->getSetting('case_sensitive'),
+        ),
+        'subid' => array(
           'type' => $field_definition->getSetting('is_ascii') === TRUE ? 'varchar_ascii' : 'varchar',
           'length' => (int) $field_definition->getSetting('max_length'),
           'binary' => $field_definition->getSetting('case_sensitive'),
@@ -93,6 +102,7 @@ class WtsMemtypeFieldType extends FieldItemBase {
   public static function generateSampleValue(FieldDefinitionInterface $field_definition) {
     $random = new Random();
     $values['value'] = $random->word(mt_rand(1, $field_definition->getSetting('max_length')));
+    $values['subid'] = $random->word(mt_rand(1, $field_definition->getSetting('max_length')));
     return $values;
   }
 
@@ -120,7 +130,8 @@ class WtsMemtypeFieldType extends FieldItemBase {
    */
   public function isEmpty() {
     $value = $this->get('value')->getValue();
-    return $value === NULL || $value === '';
+    $subid = $this->get('subid')->getValue();
+    return $value === NULL || $value === '' || $subid === NULL || $subid === '';
   }
 
 }

@@ -7,6 +7,8 @@ use Drupal\Core\Field\FieldItemInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
 
 /**
  * Plugin implementation of the 'wts_link' formatter.
@@ -79,9 +81,11 @@ class WtsLinkFormatter extends FormatterBase {
    *   The textual output generated.
    */
   protected function viewValue(FieldItemInterface $item) {
-    // The text value has no text format assigned to it, so the user input
-    // should equal the output, including newlines.
-    return nl2br(Html::escape($item->value));
+    $siteInfo = "?chk:wts01:{$item->subid}:";
+    // Need special treatment for this query string due to URL encoding.
+    $query['memtype'] = $item->value;
+    $url = Url::fromUri(self::SIGNUP_URL . $siteInfo, ['query' => $query]);
+    return Link::fromTextAndUrl($this->t('Join via ACH (e-check)'), $url)->toString();
   }
 
 }
