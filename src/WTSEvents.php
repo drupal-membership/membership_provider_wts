@@ -31,4 +31,9 @@ final class WTSEvents {
    */
   const RESOLVE_SITE_CONFIG = 'membership_provider_wts.resolver';
 
+  /**
+   * Resolve config by entity.
+   */
+  const RESOLVE_SITE_CONFIG_ENTITY = 'membership_provider_wts.resolver.entity';
+
 }

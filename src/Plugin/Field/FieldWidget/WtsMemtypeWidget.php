@@ -27,14 +27,11 @@ class WtsMemtypeWidget extends StringTextfieldWidget {
         '#type' => 'textfield',
         '#default_value' => isset($items[$delta]->value) ? $items[$delta]->value : NULL,
         '#size' => $this->getSetting('size'),
-        '#placeholder' => $this->t('Memtype ID'),
+        '#placeholder' => $this->t('ID'),
         '#maxlength' => $this->getFieldSetting('max_length'),
         '#attributes' => array('class' => array('js-text-full', 'text-full')),
+        '#description' => $this->t('The SubID will be resolved by the plugin.')
       );
-    $element['subid'] = [
-        '#placeholder' => $this->t('SubID'),
-      ] + $element['value'];
-    unset($element['subid']['#title']);
 
     return $element;
   }

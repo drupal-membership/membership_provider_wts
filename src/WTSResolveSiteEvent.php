@@ -36,8 +36,10 @@ class WTSResolveSiteEvent extends Event {
   /**
    * @inheritDoc
    */
-  public function __construct($sub_id) {
-    $this->siteConfig = ['sub_id' => $sub_id];
+  public function __construct($sub_id = NULL) {
+    if ($sub_id) {
+      $this->siteConfig = ['sub_id' => $sub_id];
+    }
   }
 
   /**

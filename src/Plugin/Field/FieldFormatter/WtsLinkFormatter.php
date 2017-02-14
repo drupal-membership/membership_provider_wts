@@ -2,7 +2,6 @@
 
 namespace Drupal\membership_provider_wts\Plugin\Field\FieldFormatter;
 
-use Drupal\Component\Utility\Html;
 use Drupal\Core\Field\FieldItemInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FormatterBase;
@@ -81,7 +80,12 @@ class WtsLinkFormatter extends FormatterBase {
    *   The textual output generated.
    */
   protected function viewValue(FieldItemInterface $item) {
-    $siteInfo = "?chk:wts01:{$item->subid}:";
+    /** @var \Drupal\membership_provider_wts\SiteResolver $resolver */
+    $resolver = \Drupal::service('membership_provider_wts.site_resolver');
+    if (!$config = $resolver->getSiteConfigByEntity($item->getEntity())) {
+      return '';
+    }
+    $siteInfo = "?chk:wts01:{$config['site_id']}:";
     // Need special treatment for this query string due to URL encoding.
     $query['memtype'] = $item->value;
     $url = Url::fromUri(self::SIGNUP_URL . $siteInfo, ['query' => $query]);

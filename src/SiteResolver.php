@@ -5,6 +5,7 @@ namespace Drupal\membership_provider_wts;
 use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheBackendInterface;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Class SiteResolver.
@@ -49,10 +50,29 @@ class SiteResolver {
     else {
       $event = new WTSResolveSiteEvent($site_tag);
       $this->event_dispatcher->dispatch(WTSEvents::RESOLVE_SITE_CONFIG, $event);
-      try {
-        $siteConfig = $event->getSiteConfig();
+      $siteConfig = $event->getSiteConfig();
+      if (empty($siteConfig['account_id'])) {
+        return NULL;
       }
-      catch (\Exception $e) {
+      $this->cache->set($key,
+        $event->getSiteConfig(),
+        Cache::PERMANENT,
+        [$event->getSiteEntity()->getEntityType()->id() . ':' . $event->getSiteEntity()->id()]);
+    }
+    return $siteConfig;
+  }
+
+  public function getSiteConfigByEntity(EntityInterface $entity) {
+    $key = 'membership_provider_wts.entity.' . $entity->id();
+    if ($cached = $this->cache->get($key)) {
+      $siteConfig = $cached->data;
+    }
+    else {
+      $event = new WTSResolveSiteEvent();
+      $event->setSiteEntity($entity);
+      $this->event_dispatcher->dispatch(WTSEvents::RESOLVE_SITE_CONFIG_ENTITY, $event);
+      $siteConfig = $event->getSiteConfig();
+      if (empty($siteConfig['account_id'])) {
         return NULL;
       }
       $this->cache->set($key,
