@@ -64,7 +64,11 @@ class WtsLinkFormatter extends FormatterBase {
     $elements = [];
 
     foreach ($items as $delta => $item) {
-      $elements[$delta] = ['#markup' => $this->viewValue($item)];
+      /** @var \Drupal\Core\Field\FieldItemInterface $item */
+      $elements[$delta] = [
+        '#markup' => $this->viewValue($item),
+        '#cache' => ['tags' => $item->getEntity()->getCacheTags()],
+      ];
     }
 
     return $elements;
