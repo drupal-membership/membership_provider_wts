@@ -8,6 +8,6 @@
   "minimum-stability": "dev",
   "require": {
     "phpseclib/phpseclib": "^2.0",
-    "nesbot/carbon": "^1.21"
+    "nesbot/carbon": "^2"
   }
 }

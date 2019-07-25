@@ -129,7 +129,9 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
       'site_id' => '',
       'account_id' => '',
       'access_keyword' => '',
+      'sftp_username' => '',
       'sftp_password' => '',
+      'sftp_hostname' => '',
     ];
   }
 
@@ -140,8 +142,10 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
     $config = [
       'site_id' => $this->t('Site ID'),
       'account_id' => $this->t('Account ID'),
-      'access_keyword' => $this->t('Access Keyword'),
+      'access_keyword' => $this->t('System Password (for validating postbacks)'),
       'sftp_password' => $this->t('SFTP Password'),
+      'sftp_username' => $this->t('SFTP username (if different from the account ID)'),
+      'sftp_hostname' => $this->t('SFTP hostname & optional path (if different from :host/)', [':host' => self::FTP]),
     ];
     $values = $this->getConfiguration() + $this->defaultConfiguration();
     foreach ($config as $key => $label) {
@@ -181,6 +185,8 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    *   Will be interpreted in UTC.
    * @param bool $includeTest
    *   Whether to include test transactions.
+   * @param bool $delete
+   *   Whether to delete files after we transfer them.
    * @param string $type
    *   Type of transaction files to query.
    *
@@ -191,15 +197,22 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    *   - Array of transactions
    *   - Carbon object for the last date successfully transferred.
    */
-  public function fetchTransactions(string $since, $includeTest = false, string $type = self::TYPE_TRANSACTIONS) {
-    $client = new SFTP(self::FTP);
+  public function fetchTransactions(string $since, $includeTest = false, bool $delete = FALSE, string $type = self::TYPE_TRANSACTIONS) {
     $config = $this->getConfiguration();
+    if ($host = $this->getConfiguration()['sftp_hostname']) {
+      list($host, $path) = explode('/', $host, 2);
+      rtrim($path, '/');
+    }
+    $client = new SFTP($host ?? self::FTP);
     $date = new Carbon($since, new \DateTimeZone(self::TIMEZONE));
     $data = [];
     $transferred = false;
     // Assumption: Login is the lowercase equivalent to Account ID.
-    if ($client->login(strtolower($config['account_id']), $config['sftp_password'])) {
-      $list = $client->rawlist();
+    if ($client->login($this->getConfiguration()['sftp_username'] ?? strtolower($config['account_id']), $config['sftp_password'])) {
+      if ($path) {
+        $client->chdir($path);
+      }
+      $list = $client->rawlist('.');
       while ($date->isPast()) {
         $file = $this->formatFile($type, $date);
         if (array_key_exists($file, $list) && ($content = $client->get($file))) {
@@ -211,6 +224,11 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
           }
           $data = array_merge($data, $recv);
           $transferred = clone $date;
+          if ($delete && !$client->delete($file)) {
+            \Drupal::logger('membership_provider_wts')->warning(
+              sprintf('Could not delete file %s as requested after WTS fetch. This is not fatal.', $file)
+            );
+          }
         }
         else if ($date->diffInDays() > 2) {
           throw new \Exception('Could not download ' . $file . ' despite valid date > 2 days ago.');
@@ -243,6 +261,7 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    *
    * @param array $data CSV data with first array item containing keys.
    * @param boolean $includeTest Flag indicating whether to include test transactions.
+   *
    * @return array Array of transactions
    */
   protected function parseTransactions(array $data, $includeTest = false) {
