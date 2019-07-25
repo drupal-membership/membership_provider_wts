@@ -93,7 +93,7 @@ class WtsLinkFormatter extends FormatterBase {
     // Need special treatment for this query string due to URL encoding.
     $query['memtype'] = $item->value;
     $url = Url::fromUri(self::SIGNUP_URL . $siteInfo, ['query' => $query]);
-    return Link::fromTextAndUrl($this->t('Join via ACH (e-check)'), $url)->toString();
+    return Link::fromTextAndUrl($this->t('Join via e-check'), $url)->toString();
   }
 
 }

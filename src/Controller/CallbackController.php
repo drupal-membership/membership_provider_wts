@@ -5,18 +5,17 @@ namespace Drupal\membership_provider_wts\Controller;
 use Drupal\Core\Access\AccessException;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
-use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\membership_provider_wts\SiteResolver;
 use Drupal\membership_provider_wts\WTSEvent;
 use Drupal\membership_provider_wts\WTSEvents;
-use Drupal\membership_provider_wts\WTSResolveSiteEvent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\membership\Plugin\MembershipProviderManager;
 use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Class CallbackController.
@@ -106,7 +105,7 @@ class CallbackController extends ControllerBase {
   private function setSiteConfig() {
     $this->siteConfig = $this->resolver->getSiteConfig($this->data['siteid']);
     if ($this->getSiteConfig()['access_keyword'] != $this->data['sys_pass']) {
-      throw new AccessException('Invalid sys_pass parameter.', 403);
+      throw new AccessDeniedHttpException();
     }
     return $this->getSiteConfig();
   }
@@ -118,6 +117,7 @@ class CallbackController extends ControllerBase {
    *   in the API documentation.
    */
   public function post() {
+    // Will check access here.
     $this->setSiteConfig();
     $event = new WTSEvent($this->getSiteConfig(), $this->data);
     switch ($this->data['action']) {
@@ -154,21 +154,6 @@ class CallbackController extends ControllerBase {
    */
   private function blankResponse() {
     return new Response('', 200, ['Content-Type' => 'text/plain']);
-  }
-
-  /**
-   * Access control callback.
-   *
-   * @return AccessResultInterface
-   */
-  public function access() {
-    try {
-      $this->setSiteConfig();
-    }
-    catch (\Throwable $e) {
-      return AccessResult::forbidden();
-    }
-    return AccessResult::allowed();
   }
 
   /**

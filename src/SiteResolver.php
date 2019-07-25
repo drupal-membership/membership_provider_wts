@@ -62,6 +62,14 @@ class SiteResolver {
     return $siteConfig;
   }
 
+  /**
+   * Retrieve site config by entity.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *
+   * @return array|null
+   * @throws \Exception
+   */
   public function getSiteConfigByEntity(EntityInterface $entity) {
     $key = 'membership_provider_wts.entity.' . $entity->id();
     if ($cached = $this->cache->get($key)) {

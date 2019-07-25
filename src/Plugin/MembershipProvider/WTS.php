@@ -28,11 +28,6 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
   use DependencySerializationTrait;
 
   /**
-   * The signup base URL.
-   */
-  const SIGNUP_BASE = 'https://join.achbill.com/Signup/signup.cgi?chk:wts01:';
-
-  /**
    * The reporting API URL.
    */
   const FTP = 'ftp.achbill.com';
@@ -181,12 +176,18 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
   /**
    * Fetch transactions from WTS SFTP.
    *
-   * @param string $since Date parseable by \DateTime to fetch from, inclusive.
+   * @param string $since
+   *   Date parseable by \DateTime to fetch from, inclusive.
    *   Will be interpreted in UTC.
-   * @param bool $includeTest Whether to include test transactions.
-   * @param string $type Type of transaction files to query.
+   * @param bool $includeTest
+   *   Whether to include test transactions.
+   * @param string $type
+   *   Type of transaction files to query.
+   *
    * @throws \Exception
-   * @return array Array:
+   *
+   * @return array
+   *   Array:
    *   - Array of transactions
    *   - Carbon object for the last date successfully transferred.
    */

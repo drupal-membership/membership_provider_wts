@@ -34,11 +34,14 @@ class WTSResolveSiteEvent extends Event {
   protected $remoteId;
 
   /**
-   * @inheritDoc
+   * Constructor.
+   *
+   * @param string $siteId
+   *   The site ID to resolve.
    */
-  public function __construct($sub_id = NULL) {
-    if ($sub_id) {
-      $this->siteConfig = ['sub_id' => $sub_id];
+  public function __construct(?string $siteId = NULL) {
+    if ($siteId) {
+      $this->siteConfig = ['siteid' => $siteId];
     }
   }
 

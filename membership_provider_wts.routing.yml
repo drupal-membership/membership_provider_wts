@@ -3,6 +3,6 @@ membership_provider_wts.callback_controller_post:
   defaults:
     _controller: '\Drupal\membership_provider_wts\Controller\CallbackController::post'
     _title: 'WTS Callback Controller'
+  methods: [POST]
   requirements:
-    _method: 'POST'
-    _custom_access: '\Drupal\membership_provider_wts\Controller\CallbackController::access'
+    _access: 'TRUE'
