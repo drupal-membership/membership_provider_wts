@@ -66,7 +66,7 @@ class WtsLinkFormatter extends FormatterBase {
     foreach ($items as $delta => $item) {
       /** @var \Drupal\Core\Field\FieldItemInterface $item */
       $elements[$delta] = [
-        '#markup' => $this->viewValue($item),
+        'value' => $this->viewValue($item),
         '#cache' => ['tags' => $item->getEntity()->getCacheTags()],
       ];
     }
@@ -80,8 +80,8 @@ class WtsLinkFormatter extends FormatterBase {
    * @param \Drupal\Core\Field\FieldItemInterface $item
    *   One field item.
    *
-   * @return string
-   *   The textual output generated.
+   * @return array
+   *   Render array.
    */
   protected function viewValue(FieldItemInterface $item) {
     /** @var \Drupal\membership_provider_wts\SiteResolver $resolver */
@@ -93,7 +93,13 @@ class WtsLinkFormatter extends FormatterBase {
     // Need special treatment for this query string due to URL encoding.
     $query['memtype'] = $item->value;
     $url = Url::fromUri(self::SIGNUP_URL . $siteInfo, ['query' => $query]);
-    return Link::fromTextAndUrl($this->t('Join via e-check'), $url)->toString();
+    $link = Link::fromTextAndUrl($this->t('Join via e-check'), $url)
+      ->toRenderable();
+    return [
+      'link' => $link,
+      '#prefix' => '<div class="wts-join-link">',
+      '#suffix' => '</div>',
+    ];
   }
 
 }
