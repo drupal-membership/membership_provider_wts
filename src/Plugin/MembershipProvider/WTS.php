@@ -55,6 +55,11 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
   const TEST_PREFIX = 'Test Only:';
 
   /**
+   * Name of test user.
+   */
+  const TEST_NAME = 'Bob Yakuza';
+
+  /**
    * A transaction result code indicating an approved status.
    */
   const RESULT_APPROVED = 'Approved';
@@ -65,6 +70,11 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    * @todo - Verify this.
    */
   const TIMEZONE = 'CST6CDT';
+
+  /**
+   * Format of Transaction Dates sent from WTS.
+   */
+  const TRANSACTION_DATE_FORMAT = 'M d, Y h:iA';
 
   /**
    * The name of the transaction key that can be referenced.
@@ -197,10 +207,10 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
    *   - Array of transactions
    *   - Carbon object for the last date successfully transferred.
    */
-  public function fetchTransactions(string $since, $includeTest = false, bool $delete = FALSE, string $type = self::TYPE_TRANSACTIONS) {
+  public function fetchTransactions(string $since, $includeTest = FALSE, bool $delete = FALSE, string $type = self::TYPE_TRANSACTIONS) {
     $config = $this->getConfiguration();
     if ($host = $this->getConfiguration()['sftp_hostname']) {
-      list($host, $path) = explode('/', $host, 2);
+      [$host, $path] = explode('/', $host, 2);
       rtrim($path, '/');
     }
     $client = new SFTP($host ?? self::FTP);
@@ -225,7 +235,7 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
           $data = array_merge($data, $recv);
           $transferred = clone $date;
           if ($delete && !$client->delete($file)) {
-            \Drupal::logger('membership_provider_wts')->warning(
+            $this->loggerChannel->warning(
               sprintf('Could not delete file %s as requested after WTS fetch. This is not fatal.', $file)
             );
           }
@@ -259,12 +269,15 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
   /**
    * Parse the data file response into an associative array.
    *
-   * @param array $data CSV data with first array item containing keys.
-   * @param boolean $includeTest Flag indicating whether to include test transactions.
+   * @param array $data
+   *   CSV data with first array item containing keys.
+   * @param boolean $includeTest
+   *   Flag indicating whether to include test transactions.
    *
-   * @return array Array of transactions
+   * @return array
+   *   Array of transactions
    */
-  protected function parseTransactions(array $data, $includeTest = false) {
+  protected function parseTransactions(array $data, $includeTest = FALSE) {
     $trans = [];
     $keys = [];
     $csv = array_map('str_getcsv', $data);
@@ -274,7 +287,11 @@ class WTS extends ConfigurableMembershipProviderBase implements ContainerFactory
       }
       else {
         $member = array_combine($keys, $line);
-        if (!$includeTest && strpos($member['Authorization Code'], self::TEST_PREFIX) === 0) {
+        // Failed test transactions don't start with the test prefix.
+        if (
+          !$includeTest
+          && (strpos($member['Authorization Code'], self::TEST_PREFIX) === 0 || strtolower($member['Consumer Name']) === self::TEST_NAME)
+        ) {
           continue;
         }
         $trans[] = $member;

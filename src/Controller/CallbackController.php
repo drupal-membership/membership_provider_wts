@@ -3,8 +3,6 @@
 namespace Drupal\membership_provider_wts\Controller;
 
 use Drupal\Core\Access\AccessException;
-use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\membership_provider_wts\SiteResolver;
@@ -18,23 +16,14 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
- * Class CallbackController.
- *
- * @package Drupal\membership_provider_wts\Controller
+ * Controller for callbacks from WTS.
  */
 class CallbackController extends ControllerBase {
 
   /**
    * @var \Symfony\Component\HttpFoundation\Request
    */
-  private $currentRequest;
-
-  /**
-   * The site config.
-   *
-   * @var array
-   */
-  private $siteConfig;
+  protected $currentRequest;
 
   /**
    * Drupal\membership_provider\Plugin\MembershipProviderManager definition.
@@ -58,13 +47,6 @@ class CallbackController extends ControllerBase {
   protected $cache;
 
   /**
-   * The parsed request query string.
-   *
-   * @var array
-   */
-  protected $data;
-
-  /**
    * The WTS site resolver.
    *
    * @var \Drupal\membership_provider_wts\SiteResolver
@@ -79,7 +61,6 @@ class CallbackController extends ControllerBase {
     $this->plugin_manager_membership_provider_processor = $plugin_manager_membership_provider_processor;
     $this->event_dispatcher = $event_dispatcher;
     $this->cache = $cache_default;
-    $this->data = \GuzzleHttp\Psr7\parse_query($this->currentRequest->getContent());
     $this->resolver = $resolver;
   }
 
@@ -99,15 +80,20 @@ class CallbackController extends ControllerBase {
   /**
    * Set the site config, also checking access.
    *
-   * @return array The site config.
-   * @throws AccessException
+   * @param array $data
+   *   The posted data.
+   *
+   * @return array
+   *   The site config.
+   *
+   * @throws \Drupal\Core\Access\AccessException
    */
-  private function setSiteConfig() {
-    $this->siteConfig = $this->resolver->getSiteConfig($this->data['siteid']);
-    if ($this->getSiteConfig()['access_keyword'] != $this->data['sys_pass']) {
+  protected function setSiteConfig(array $data) {
+    $siteConfig = $this->resolver->getSiteConfig($data['siteid']);
+    if ($siteConfig['access_keyword'] != $data['sys_pass']) {
       throw new AccessDeniedHttpException();
     }
-    return $this->getSiteConfig();
+    return $siteConfig;
   }
 
   /**
@@ -117,10 +103,12 @@ class CallbackController extends ControllerBase {
    *   in the API documentation.
    */
   public function post() {
+    $data = \GuzzleHttp\Psr7\parse_query($this->currentRequest->getContent());
     // Will check access here.
-    $this->setSiteConfig();
-    $event = new WTSEvent($this->getSiteConfig(), $this->data);
-    switch ($this->data['action']) {
+    $siteConfig = $this->setSiteConfig($data);
+    unset($data['sys_pass']);
+    $event = new WTSEvent($siteConfig, $data);
+    switch ($data['action']) {
       case 'exists':
         $this->event_dispatcher->dispatch(WTSEvents::USERNAME_AVAILABLE, $event);
         $msg = $event->isFulfilled() ? '*failed*' : '*success*';
@@ -141,28 +129,26 @@ class CallbackController extends ControllerBase {
   }
 
   /**
-   * @param $msg string Message
-   * @param $code int Status code
+   * Generate an error response.
+   *
+   * @param string $msg
+   *   Message
+   * @param int $code
+   *   Status code
+   *
    * @return \Symfony\Component\HttpFoundation\Response
    */
-  private function errorResponse($msg, $code = 400) {
+  protected function errorResponse($msg, $code = 400) {
     return new Response($msg, $code, ['Content-Type' => 'text/plain']);
   }
 
   /**
+   * Generate a blank OK response.
+   *
    * @return \Symfony\Component\HttpFoundation\Response
    */
-  private function blankResponse() {
+  protected function blankResponse() {
     return new Response('', 200, ['Content-Type' => 'text/plain']);
-  }
-
-  /**
-   * Get the current site config.
-   *
-   * @return array
-   */
-  public function getSiteConfig() {
-    return $this->siteConfig;
   }
 
 }
