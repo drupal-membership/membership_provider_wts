@@ -2,8 +2,6 @@
 
 namespace Drupal\membership_provider_wts\Controller;
 
-use Drupal\Core\Access\AccessException;
-use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\membership_provider_wts\SiteResolver;
 use Drupal\membership_provider_wts\WTSEvent;
@@ -40,13 +38,6 @@ class CallbackController extends ControllerBase {
   protected $event_dispatcher;
 
   /**
-   * Drupal\Core\Cache\DatabaseBackend definition.
-   *
-   * @var \Drupal\Core\Cache\CacheBackendInterface
-   */
-  protected $cache;
-
-  /**
    * The WTS site resolver.
    *
    * @var \Drupal\membership_provider_wts\SiteResolver
@@ -56,11 +47,10 @@ class CallbackController extends ControllerBase {
   /**
    * {@inheritdoc}
    */
-  public function __construct(RequestStack $request_stack, MembershipProviderManager $plugin_manager_membership_provider_processor, ContainerAwareEventDispatcher $event_dispatcher, CacheBackendInterface $cache_default, SiteResolver $resolver) {
+  public function __construct(RequestStack $request_stack, MembershipProviderManager $plugin_manager_membership_provider_processor, ContainerAwareEventDispatcher $event_dispatcher, SiteResolver $resolver) {
     $this->currentRequest = $request_stack->getCurrentRequest();
     $this->plugin_manager_membership_provider_processor = $plugin_manager_membership_provider_processor;
     $this->event_dispatcher = $event_dispatcher;
-    $this->cache = $cache_default;
     $this->resolver = $resolver;
   }
 
@@ -72,7 +62,6 @@ class CallbackController extends ControllerBase {
       $container->get('request_stack'),
       $container->get('plugin.manager.membership_provider.processor'),
       $container->get('event_dispatcher'),
-      $container->get('cache.default'),
       $container->get('membership_provider_wts.site_resolver')
     );
   }
@@ -99,8 +88,9 @@ class CallbackController extends ControllerBase {
   /**
    * POST callback handler.
    *
-   * @returns Response A text/plain response; the values are from the pseudo-code
-   *   in the API documentation.
+   * @returns Response
+   *   A text/plain response; the values are from the pseudo-code in the API
+   *   documentation.
    */
   public function post() {
     $data = \GuzzleHttp\Psr7\parse_query($this->currentRequest->getContent());
@@ -139,7 +129,7 @@ class CallbackController extends ControllerBase {
    * @return \Symfony\Component\HttpFoundation\Response
    */
   protected function errorResponse($msg, $code = 400) {
-    return new Response($msg, $code, ['Content-Type' => 'text/plain']);
+    return new Response($msg, $code, ['content-type' => 'text/plain']);
   }
 
   /**
@@ -148,7 +138,7 @@ class CallbackController extends ControllerBase {
    * @return \Symfony\Component\HttpFoundation\Response
    */
   protected function blankResponse() {
-    return new Response('', 200, ['Content-Type' => 'text/plain']);
+    return new Response('', 200, ['content-type' => 'text/plain']);
   }
 
 }
